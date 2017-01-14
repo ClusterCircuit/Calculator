@@ -1,0 +1,179 @@
+from decimal import Decimal, getcontext
+import sys
+
+class Calculator:
+
+    # ----- Constructor ------
+    def __init__(self, equation):
+        
+        self.temp = equation                                                # Temporary equation
+        self.number = []                                                    # Temporary Stack of number
+        self.operator = []                                                  # Temporary Stack of operator
+        self.eq = []                                                        # Stack of equation
+
+
+    # ----- Caller Method ----- 
+    def calculate(self):
+    
+            self.convert_equation(self.temp)                                # - Call Method - Convert expression String to number
+            self.showAnswer()
+            
+    
+    # ----- Converter Method -----
+    def convert_equation(self, data):
+
+        operator = ["+","x","/","*","÷","^"]                                # List of Operator
+        text = ""                                                           # Temporary address for keep number
+        i = 0                                                               # Default index value
+        p_count = 0                                                         # Default point counter value
+        
+        while(i < len(data)):
+            if(data[i].isdigit()):                                          # If found number 
+                text += data[i]                                             # Add number to temporary address
+                for j in range(i+1, len(data)):                           
+                    if(data[j].isdigit()):                                  # If found next number or point
+                        text += data[j]                                     # Add number to temporary address
+                        i += 1
+                    elif (data[j] == "."):
+                        if (p_count > 0):                                   # If found point more than 1
+                            self.convert_status_error()                     # - Call Method - Status Error 
+                            sys.exit()
+                        else:
+                            text += data[j]                                 # Add number to temporary address
+                            i += 1
+                            p_count += 1
+                    else:                                                   # If cannot found number
+                        break
+                self.eq.append(float(text))                                 # Add Number into stack of equation
+                text = ""                                                   # Reset temporary address
+                p_count = 0                                                 # Reset point counter
+                
+            elif((data[i] == "-" and i == 0) or                             # If found '-' at first position
+                (data[i] == "-" and data[i-1] == "(") or                    # If found '-' and before is '('
+                data[i] == "-" and data[i-1] in operator):                  # If found '-' and before is '+', 'x', '/', '*', '÷', '^'
+                text += data[i]
+                
+            elif(data[i] == "."):                                           # If found others or blank
+                text = "0."                                                 # Add Number into stack of equation
+                for j in range(i+1, len(data)):                           
+                    if(data[j].isdigit()):                                  # If found next number or point
+                        text += data[j]                                     # Add number to temporary address
+                        i += 1
+                        p_count += 1
+                    else:
+                        print(text)
+                        print("Found point = ", p_count)
+                        print("----------")
+                        break
+                self.eq.append(float(text))                                 # Add Number into stack of equation
+                text = ""
+                p_count = 0
+                
+            elif(data[i] != " "):                                           # If found others or blank
+                self.eq.append(data[i])                                     # Add Number into stack of equation
+            i += 1
+            
+        self.convert_status_pass()                                          # - Call Method - Status Pass
+
+    
+    def showAnswer(self):                                                      # Calculate answer and show it
+        self.infix()                                                        # Infix step
+        self.postfix()                                                      # Postfix step
+        
+    # Infix step
+    def infix(self):            
+        list_eq = self.eq              
+        while(len(list_eq) != 0):                                           # No value in list_eq
+            data = list_eq.pop(0)                                           # Dequeue data from left
+            if data == ")" :                                                # Find ")"
+                op = self.operator.pop()                                    # Pop value from opertor stack
+                while(op != "("):                                           # Data is not "("
+                    y = self.number.pop()                                   # set x
+                    x = self.number.pop()                                   # Set y
+                    str_ans = self.cal_in(x, y, op)                    # Calculate 2 variable and get to string
+                    print(x, op, y, "=", str_ans)
+                    self.number.append(str_ans)                             # Push to number stack
+                    op = self.operator.pop()                                # Pop operator stack
+            elif (data == "*" or data == "/") :                             # Find "*" or "/"
+                y = list_eq.pop(0)                                          # Dequeue value from left
+                if y == "(" :                                               # Find "("
+                    self.operator.append(data)                              # Push data to operator stack
+                    self.operator.append(y)                                 # Push data to operator stack
+                else :                                                      # Otherwise
+                    x = self.number.pop()                                   # Set x
+                    op = data                                               # Set op
+                    str_ans = self.cal_in(x, y, op)                    # Calculate 2 variable and get to string
+                    print(x, op, y, "=", str_ans)
+                    self.number.append(str_ans)                             # Push answer to number stack
+            elif (data == "+" or data == "-" or data == "(") :              # Find "+" or "-" or "("
+                self.operator.append(data)                                  # Push data to operator stack
+            else :                                                          # Otherwise
+                self.number.append(data)                                    # Push data to number stack
+    
+    # Postfix step
+    def postfix(self):
+        while(len(self.operator) != 0):                                     # length of operator list is not null
+            op = self.operator.pop()                                        # Pop operator stack
+            y = self.number.pop()                                           # Pop number to y
+            x = self.number.pop()                                           # Pop number to x
+            str_ans = self.cal_in(x, y, op)                            # Calculate 2 variable and get to string
+            print(x, op, y, "=", str_ans)
+            self.number.append(str_ans)                                     # Push answer to number stack
+        self.ans = float(self.number.pop())                                 # Set answer
+        print(self.ans)                                                     # Print answer
+        self.calculate_status()
+    
+    # Calculate answer            
+    def cal_in(self, x, y, op):
+        if op == "+":           # op is plus
+            return str(float(x) + float(y)) # x + y
+        elif op == "-":         # op is minus
+            return str(float(x) - float(y)) # x - y
+        elif op == "*":         # op is multiply
+            return str(float(x) * float(y)) # x * y
+        elif op == "/":         # op is divine
+            return str(float(x) / float(y)) # x / y
+            
+
+    # ----- Method for show calculate status -----         
+    def calculate_status(self):
+        print("")
+        print(" _______________________________ ")
+        print("|                               |")
+        print("|     Equation was calculate    |")
+        print("|_______________________________|")
+        print(" ______________________________________________________________ ")
+        print("")
+        print("Type 'main()' to start calculator")
+        
+    # ----- Method for show conversion status -----
+    def convert_status_pass(self):
+        
+        print(" _______________________________ ")
+        print("|                               |")
+        print("|   Convert data was finished   |")
+        print("|_______________________________|")
+        print("")
+        print("Stack of equation")
+        print("#####", self.eq, "#####")
+        print(" ______________________________________________________________ ")
+        print("")
+
+    # ----- Method for show conversion status -----    
+    def convert_status_error(self):
+        
+        print(" _______________________________ ")
+        print("|                               |")
+        print("| Convert data was unsuccessful |")
+        print("|_______________________________|")
+        print("")
+        print("Program has been terminate")
+        print(" ______________________________________________________________ ")
+        print("")
+
+# Main Function        
+def main():
+    eq = Calculator(input("Insert equation Here >>> "))
+    eq.calculate()
+
+print("Type 'main()' to start calculator")
